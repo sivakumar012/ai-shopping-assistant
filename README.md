@@ -47,5 +47,5 @@ It’s a small step toward reducing:
 
 ---
 
-Still early, still evolving—but built with a simple idea:  
-**help people find what they need, faster—and with less friction.**
+Still early, still evolving, but built with a simple idea:  
+**help people find what they need, faster and with less friction.**
