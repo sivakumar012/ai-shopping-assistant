@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Price Alert</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🛒 Price Alert</h1>
+      <p>Get WhatsApp alerts when Amazon prices drop</p>
+    </header>
+
+    <!-- Add Item Form -->
+    <section class="card">
+      <h2>Add to Watchlist</h2>
+      <form id="addForm">
+        <div class="form-row">
+          <input type="text" id="productName" placeholder="Product name" required />
+          <input type="text" id="whatsappNumber" placeholder="WhatsApp number (e.g. +919876543210)" required />
+        </div>
+        <input type="url" id="productUrl" placeholder="Amazon product URL" required />
+        <div class="form-row">
+          <input type="number" id="targetPrice" placeholder="Target price (₹)" min="1" step="0.01" required />
+          <button type="submit">Add Alert</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Controls -->
+    <div class="controls">
+      <span id="itemCount">0 items</span>
+      <button id="checkNowBtn" class="btn-secondary">🔄 Check Prices Now</button>
+    </div>
+
+    <!-- Watchlist Table -->
+    <section class="card">
+      <table id="watchlistTable">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Target ₹</th>
+            <th>Current ₹</th>
+            <th>WhatsApp</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="watchlistBody">
+          <tr><td colspan="6" class="empty">No alerts yet. Add one above.</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
