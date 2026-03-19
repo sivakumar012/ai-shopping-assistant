@@ -1,0 +1,92 @@
+[
+  {
+    "name": "Nike Run Flex",
+    "category": "shoes",
+    "price": 4500,
+    "tags": ["running", "lightweight", "outdoor"]
+  },
+  {
+    "name": "Adidas Sprint Pro",
+    "category": "shoes",
+    "price": 4800,
+    "tags": ["running", "breathable", "outdoor"]
+  },
+  {
+    "name": "Puma Casual Stride",
+    "category": "shoes",
+    "price": 2999,
+    "tags": ["casual", "everyday", "lightweight"]
+  },
+  {
+    "name": "Reebok Trail Blazer",
+    "category": "shoes",
+    "price": 5500,
+    "tags": ["hiking", "outdoor", "running"]
+  },
+  {
+    "name": "Dell Inspiron 15",
+    "category": "laptop",
+    "price": 54990,
+    "tags": ["office", "everyday", "coding"]
+  },
+  {
+    "name": "Lenovo IdeaPad Gaming 3",
+    "category": "laptop",
+    "price": 62990,
+    "tags": ["gaming", "coding", "streaming"]
+  },
+  {
+    "name": "HP Pavilion x360",
+    "category": "laptop",
+    "price": 49990,
+    "tags": ["office", "studying", "travel"]
+  },
+  {
+    "name": "Apple iPhone 15",
+    "category": "phone",
+    "price": 79900,
+    "tags": ["photography", "everyday", "professional"]
+  },
+  {
+    "name": "Samsung Galaxy S24",
+    "category": "phone",
+    "price": 74999,
+    "tags": ["photography", "gaming", "everyday"]
+  },
+  {
+    "name": "Redmi Note 13",
+    "category": "phone",
+    "price": 17999,
+    "tags": ["everyday", "casual", "studying"]
+  },
+  {
+    "name": "Sony WH-1000XM5",
+    "category": "headphones",
+    "price": 29990,
+    "tags": ["travel", "office", "professional"]
+  },
+  {
+    "name": "boAt Airdopes 141",
+    "category": "headphones",
+    "price": 1299,
+    "tags": ["workout", "running", "casual"]
+  },
+  {
+    "name": "JBL Tune 770NC",
+    "category": "headphones",
+    "price": 7999,
+    "tags": ["everyday", "travel", "casual"]
+  },
+  {
+    "name": "Samsung 55-inch 4K Smart TV",
+    "category": "tv",
+    "price": 42990,
+    "tags": ["streaming", "gaming", "indoor"]
+  },
+  {
+    "name": "Mi 43-inch Full HD TV",
+    "category": "tv",
+    "price": 24999,
+    "tags": ["streaming", "everyday", "indoor"]
+  }
+]

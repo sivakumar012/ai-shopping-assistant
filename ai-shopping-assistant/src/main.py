@@ -1,37 +1,31 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(__file__))
+
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from contextlib import asynccontextmanager
 from typing import Optional
-import os
 
 from database import engine, get_db, Base
 from models import WatchlistItem
 from scheduler import start_scheduler, stop_scheduler, check_prices
+from assistant import handle as assistant_handle
 
 Base.metadata.create_all(bind=engine)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    start_scheduler()
-    yield
-    stop_scheduler()
-
-app = FastAPI(title="Price Alert App", lifespan=lifespan)
-
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000").split(",")
+app = FastAPI(title="AI Shopping Assistant")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Serve frontend
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
 app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 
@@ -44,14 +38,17 @@ class WatchlistCreate(BaseModel):
     product_name: str
     product_url: str
     target_price: float
-    whatsapp_number: str  # e.g. +919876543210
+    whatsapp_number: str
 
 class WatchlistUpdate(BaseModel):
     target_price: Optional[float] = None
     is_active: Optional[bool] = None
     notified: Optional[bool] = None
 
-# --- Routes ---
+class ChatMessage(BaseModel):
+    message: str
+
+# --- Watchlist Routes ---
 @app.get("/api/watchlist")
 def get_watchlist(db: Session = Depends(get_db)):
     return db.query(WatchlistItem).order_by(WatchlistItem.created_at.desc()).all()
@@ -86,6 +83,19 @@ def delete_item(item_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/check-now")
 def trigger_check():
-    """Manually trigger a price check."""
     check_prices()
     return {"detail": "Price check triggered"}
+
+# --- Assistant Chat Route ---
+@app.post("/api/chat")
+def chat(msg: ChatMessage, db: Session = Depends(get_db)):
+    reply = assistant_handle(msg.message, db_session=db)
+    return {"reply": reply}
+
+@app.on_event("startup")
+def startup():
+    start_scheduler()
+
+@app.on_event("shutdown")
+def shutdown():
+    stop_scheduler()

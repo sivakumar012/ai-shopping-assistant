@@ -5,14 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Meta WhatsApp Business Cloud API
-WA_TOKEN = os.getenv("WA_ACCESS_TOKEN")
-WA_PHONE_ID = os.getenv("WA_PHONE_NUMBER_ID")
-
-if not WA_TOKEN:
-    print("[WhatsApp WARNING] WA_ACCESS_TOKEN is not set. Alerts will fail.")
-if not WA_PHONE_ID:
-    print("[WhatsApp WARNING] WA_PHONE_NUMBER_ID is not set. Alerts will fail.")
-
+WA_TOKEN = os.getenv("WA_ACCESS_TOKEN")       # Permanent system user token
+WA_PHONE_ID = os.getenv("WA_PHONE_NUMBER_ID") # From Meta Developer Console
 WA_API_URL = f"https://graph.facebook.com/v19.0/{WA_PHONE_ID}/messages"
 
 def send_price_alert(to: str, product_name: str, current_price: float, target_price: float, url: str):

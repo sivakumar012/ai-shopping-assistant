@@ -1,16 +1,10 @@
 const API = "/api";
 
 async function fetchWatchlist() {
-  try {
-    const res = await fetch(`${API}/watchlist`);
-    if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-    const items = await res.json();
-    renderTable(items);
-    document.getElementById("itemCount").textContent = `${items.length} item${items.length !== 1 ? "s" : ""}`;
-  } catch (err) {
-    showToast("Failed to load watchlist. Is the server running?", true);
-    console.error("[fetchWatchlist]", err);
-  }
+  const res = await fetch(`${API}/watchlist`);
+  const items = await res.json();
+  renderTable(items);
+  document.getElementById("itemCount").textContent = `${items.length} item${items.length !== 1 ? "s" : ""}`;
 }
 
 function renderTable(items) {
