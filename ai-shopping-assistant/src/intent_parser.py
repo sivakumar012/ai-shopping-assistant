@@ -27,16 +27,15 @@ def _extract_category(text: str) -> str | None:
     return None
 
 def _extract_budget(text: str) -> float | None:
-    # Matches: "under 5000", "below ₹5,000", "less than 50000", "within 5k"
+    # Matches: "under 5000", "below ₹5,000", "less than 50000", "within 5k", "under 60k"
     match = re.search(
-        r"(?:under|below|less than|within|upto|up to|max|budget[:\s]+)[₹rs\.\s]*(\d[\d,]*)\s*k?",
+        r"(?:under|below|less than|within|upto|up to|max|budget[:\s]+)[₹rs\.\s]*(\d[\d,]*)\s*(k)?",
         text.lower()
     )
     if match:
         raw = match.group(1).replace(",", "")
         value = float(raw)
-        # Handle "5k" → 5000
-        if re.search(r"\d\s*k\b", text.lower()):
+        if match.group(2) == "k":
             value *= 1000
         return value
     return None

@@ -9,7 +9,7 @@ from intent_parser import parse_intent
 from recommender import recommend
 
 
-def handle(user_input: str) -> str:
+def handle(user_input: str, db_session=None) -> str:
     intent = parse_intent(user_input)
 
     category = intent.get("category")
@@ -23,7 +23,7 @@ def handle(user_input: str) -> str:
     if use_case:
         detected.append(f"intent = {use_case}")
     if budget:
-        detected.append(f"budget = {int(budget)}")
+        detected.append(f"budget = ₹{int(budget):,}")
 
     if not detected:
         return (

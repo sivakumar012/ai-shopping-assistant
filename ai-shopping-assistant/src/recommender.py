@@ -1,7 +1,7 @@
 """
 recommender.py
-Task 3.3 — Filter and rank products by category, budget, tag match, and price proximity.
-Returns top 3 recommendations.
+Filter and rank products by category, budget, tag match, and price proximity.
+Returns top 3 recommendations. Products are cached in memory at startup.
 """
 
 import json
@@ -9,9 +9,15 @@ import os
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "products.json")
 
-def load_products() -> list[dict]:
-    with open(DATA_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
+# Cache loaded once at import time — avoids disk read on every request
+_PRODUCTS_CACHE: list[dict] = []
+
+def _load_products() -> list[dict]:
+    global _PRODUCTS_CACHE
+    if not _PRODUCTS_CACHE:
+        with open(DATA_PATH, "r", encoding="utf-8") as f:
+            _PRODUCTS_CACHE = json.load(f)
+    return _PRODUCTS_CACHE
 
 def _score(product: dict, intent: str | None, budget: float | None) -> float:
     score = 0.0
@@ -21,12 +27,11 @@ def _score(product: dict, intent: str | None, budget: float | None) -> float:
         tags = product.get("tags", [])
         score += sum(10 for tag in tags if intent.lower() in tag.lower())
 
-    # Price proximity: closer to budget = higher score (only if within budget)
+    # Price proximity: closer to budget ceiling = better value fit (higher score)
+    # Products already filtered to <= budget, so this rewards items near the budget
     if budget:
         price = product.get("price", 0)
-        if price <= budget:
-            # Normalize: 0–10 based on how close price is to budget
-            score += 10 * (price / budget)
+        score += 10 * (price / budget)
 
     return score
 
@@ -35,7 +40,7 @@ def recommend(category: str | None, intent: str | None, budget: float | None, to
     Filter by category and budget, rank by tag match + price proximity.
     Returns top N products.
     """
-    products = load_products()
+    products = _load_products()
 
     # Step 1: Filter by category
     if category:

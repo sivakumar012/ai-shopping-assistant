@@ -1,10 +1,10 @@
 import os
+import re
 import httpx
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Meta WhatsApp Business Cloud API
 WA_TOKEN = os.getenv("WA_ACCESS_TOKEN")
 WA_PHONE_ID = os.getenv("WA_PHONE_NUMBER_ID")
 
@@ -15,13 +15,18 @@ if not WA_PHONE_ID:
 
 WA_API_URL = f"https://graph.facebook.com/v19.0/{WA_PHONE_ID}/messages"
 
+E164_RE = re.compile(r"^\+?[1-9]\d{6,14}$")
+
 def send_price_alert(to: str, product_name: str, current_price: float, target_price: float, url: str):
     """
     Sends a WhatsApp message via Meta Business Cloud API.
     'to' must be in E.164 format without '+': e.g. 919876543210
     """
-    # Strip leading + if present
     to_clean = to.lstrip("+")
+
+    if not E164_RE.match(to):
+        print(f"[WhatsApp Error] Invalid phone number format: {to}. Expected E.164 (e.g. +919876543210).")
+        return
 
     payload = {
         "messaging_product": "whatsapp",

@@ -1,10 +1,16 @@
 const API = "/api";
 
 async function fetchWatchlist() {
-  const res = await fetch(`${API}/watchlist`);
-  const items = await res.json();
-  renderTable(items);
-  document.getElementById("itemCount").textContent = `${items.length} item${items.length !== 1 ? "s" : ""}`;
+  try {
+    const res = await fetch(`${API}/watchlist`);
+    if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+    const items = await res.json();
+    renderTable(items);
+    document.getElementById("itemCount").textContent = `${items.length} item${items.length !== 1 ? "s" : ""}`;
+  } catch (err) {
+    showToast("Failed to load watchlist. Is the server running?", true);
+    console.error("[fetchWatchlist]", err);
+  }
 }
 
 function renderTable(items) {
@@ -62,58 +68,88 @@ document.getElementById("addForm").addEventListener("submit", async (e) => {
     whatsapp_number: document.getElementById("whatsappNumber").value.trim(),
   };
 
-  const res = await fetch(`${API}/watchlist`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (res.ok) {
-    e.target.reset();
-    showToast("Alert added successfully");
-    fetchWatchlist();
-  } else {
-    showToast("Failed to add alert", true);
+  try {
+    const res = await fetch(`${API}/watchlist`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      e.target.reset();
+      showToast("Alert added successfully");
+      fetchWatchlist();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast(err.detail || "Failed to add alert", true);
+    }
+  } catch (err) {
+    showToast("Failed to add alert. Is the server running?", true);
+    console.error("[addForm]", err);
   }
 });
 
 async function deleteItem(id) {
   if (!confirm("Remove this alert?")) return;
-  await fetch(`${API}/watchlist/${id}`, { method: "DELETE" });
-  showToast("Alert removed");
-  fetchWatchlist();
+  try {
+    await fetch(`${API}/watchlist/${id}`, { method: "DELETE" });
+    showToast("Alert removed");
+    fetchWatchlist();
+  } catch (err) {
+    showToast("Failed to delete item", true);
+    console.error("[deleteItem]", err);
+  }
 }
 
 async function toggleActive(id, isActive) {
-  await fetch(`${API}/watchlist/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ is_active: isActive }),
-  });
-  fetchWatchlist();
+  try {
+    await fetch(`${API}/watchlist/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: isActive }),
+    });
+    fetchWatchlist();
+  } catch (err) {
+    showToast("Failed to update item", true);
+    console.error("[toggleActive]", err);
+  }
 }
 
 async function resetNotified(id) {
-  await fetch(`${API}/watchlist/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ notified: false, is_active: true }),
-  });
-  showToast("Re-watching product");
-  fetchWatchlist();
+  try {
+    await fetch(`${API}/watchlist/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notified: false, is_active: true }),
+    });
+    showToast("Re-watching product");
+    fetchWatchlist();
+  } catch (err) {
+    showToast("Failed to reset item", true);
+    console.error("[resetNotified]", err);
+  }
 }
 
 document.getElementById("checkNowBtn").addEventListener("click", async () => {
   const btn = document.getElementById("checkNowBtn");
   btn.disabled = true;
   btn.textContent = "Checking...";
-  await fetch(`${API}/check-now`, { method: "POST" });
-  showToast("Price check triggered");
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.textContent = "🔄 Check Prices Now";
-    fetchWatchlist();
-  }, 3000);
+  try {
+    const res = await fetch(`${API}/check-now`, { method: "POST" });
+    if (res.status === 429) {
+      showToast("Please wait before triggering another check.", true);
+    } else {
+      showToast("Price check triggered");
+    }
+  } catch (err) {
+    showToast("Failed to trigger check", true);
+    console.error("[checkNow]", err);
+  } finally {
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = "🔄 Check Prices Now";
+      fetchWatchlist();
+    }, 3000);
+  }
 });
 
 function showToast(msg, isError = false) {

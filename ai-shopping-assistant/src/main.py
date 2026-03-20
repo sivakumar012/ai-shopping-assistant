@@ -2,6 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -17,11 +18,19 @@ from assistant import handle as assistant_handle
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="AI Shopping Assistant")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    start_scheduler()
+    yield
+    stop_scheduler()
+
+app = FastAPI(title="AI Shopping Assistant", lifespan=lifespan)
+
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000").split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -83,6 +92,13 @@ def delete_item(item_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/check-now")
 def trigger_check():
+    """Manually trigger a price check. Rate-limited to once per minute."""
+    import time
+    now = time.time()
+    last = getattr(trigger_check, "_last_called", 0)
+    if now - last < 60:
+        raise HTTPException(status_code=429, detail="Please wait before triggering another check.")
+    trigger_check._last_called = now
     check_prices()
     return {"detail": "Price check triggered"}
 
@@ -92,10 +108,3 @@ def chat(msg: ChatMessage, db: Session = Depends(get_db)):
     reply = assistant_handle(msg.message, db_session=db)
     return {"reply": reply}
 
-@app.on_event("startup")
-def startup():
-    start_scheduler()
-
-@app.on_event("shutdown")
-def shutdown():
-    stop_scheduler()

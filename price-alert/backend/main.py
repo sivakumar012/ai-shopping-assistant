@@ -86,6 +86,12 @@ def delete_item(item_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/check-now")
 def trigger_check():
-    """Manually trigger a price check."""
+    """Manually trigger a price check. Rate-limited to once per minute."""
+    import time
+    now = time.time()
+    last = getattr(trigger_check, "_last_called", 0)
+    if now - last < 60:
+        raise HTTPException(status_code=429, detail="Please wait before triggering another check.")
+    trigger_check._last_called = now
     check_prices()
     return {"detail": "Price check triggered"}

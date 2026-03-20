@@ -113,13 +113,23 @@ document.getElementById("checkNowBtn").addEventListener("click", async () => {
   const btn = document.getElementById("checkNowBtn");
   btn.disabled = true;
   btn.textContent = "Checking...";
-  await fetch(`${API}/check-now`, { method: "POST" });
-  showToast("Price check triggered");
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.textContent = "🔄 Check Prices Now";
-    fetchWatchlist();
-  }, 3000);
+  try {
+    const res = await fetch(`${API}/check-now`, { method: "POST" });
+    if (res.status === 429) {
+      showToast("Please wait before triggering another check.", true);
+    } else {
+      showToast("Price check triggered");
+    }
+  } catch (err) {
+    showToast("Failed to trigger check", true);
+    console.error("[checkNow]", err);
+  } finally {
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = "🔄 Check Prices Now";
+      fetchWatchlist();
+    }, 3000);
+  }
 });
 
 function showToast(msg, isError = false) {
