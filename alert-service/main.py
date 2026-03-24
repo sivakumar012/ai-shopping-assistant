@@ -25,7 +25,7 @@ from typing import Optional
 
 from fastapi import FastAPI, Depends, HTTPException, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 from sqlalchemy.orm import Session
 
 from database import engine, get_db, Base
@@ -119,9 +119,11 @@ class AlertCreate(BaseModel):
             raise ValueError("product_name must be 1–200 characters")
         return v.strip()
 
-    def model_post_init(self, __context):
+    @model_validator(mode="after")
+    def validate_channel(self):
         if not self.whatsapp_number and not self.webhook_url:
             raise ValueError("At least one of whatsapp_number or webhook_url must be provided")
+        return self
 
 
 class AlertUpdate(BaseModel):
