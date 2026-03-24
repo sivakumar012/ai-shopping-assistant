@@ -7,17 +7,14 @@ import logging
 
 log = logging.getLogger(__name__)
 
-WA_TOKEN = os.getenv("WA_ACCESS_TOKEN")
-WA_PHONE_ID = os.getenv("WA_PHONE_NUMBER_ID")
-WA_API_URL = f"https://graph.facebook.com/v19.0/{WA_PHONE_ID}/messages"
-
-if not WA_TOKEN:
-    log.warning("WA_ACCESS_TOKEN not set — WhatsApp alerts will fail")
-if not WA_PHONE_ID:
-    log.warning("WA_PHONE_NUMBER_ID not set — WhatsApp alerts will fail")
-
 
 def _send_whatsapp(to: str, product_name: str, current_price: float, target_price: float, url: str):
+    wa_phone_id = os.getenv("WA_PHONE_NUMBER_ID")
+    wa_token = os.getenv("WA_ACCESS_TOKEN")
+    if not wa_token or not wa_phone_id:
+        log.error("WhatsApp credentials not set — cannot send alert")
+        return
+    api_url = f"https://graph.facebook.com/v19.0/{wa_phone_id}/messages"
     to_clean = to.lstrip("+")
     payload = {
         "messaging_product": "whatsapp",
@@ -35,8 +32,8 @@ def _send_whatsapp(to: str, product_name: str, current_price: float, target_pric
         }
     }
     try:
-        r = httpx.post(WA_API_URL, json=payload,
-                       headers={"Authorization": f"Bearer {WA_TOKEN}", "Content-Type": "application/json"},
+        r = httpx.post(api_url, json=payload,
+                       headers={"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"},
                        timeout=10)
         r.raise_for_status()
         log.info("WhatsApp alert sent to %s", to_clean)
