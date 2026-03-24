@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+gunicorn
+sqlalchemy
+psycopg2-binary
+apscheduler
+requests
+beautifulsoup4
+python-dotenv
+httpx
+passlib[bcrypt]

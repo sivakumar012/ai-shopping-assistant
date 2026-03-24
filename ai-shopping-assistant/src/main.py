@@ -3,20 +3,28 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
+import re
+import logging
 
 from database import engine, get_db, Base
 from models import WatchlistItem
 from scheduler import start_scheduler, stop_scheduler, check_prices
 from assistant import handle as assistant_handle
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+log = logging.getLogger(__name__)
+
 Base.metadata.create_all(bind=engine)
+
+E164_RE = re.compile(r"^\+?[1-9]\d{6,14}$")
+AMAZON_URL_RE = re.compile(r"^https://(www\.)?amazon\.(in|com|co\.uk|de|fr|ca|com\.au)/")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,12 +36,15 @@ app = FastAPI(title="AI Shopping Assistant", lifespan=lifespan)
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000").split(",")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS, allow_methods=["*"], allow_headers=["*"])
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
 app.mount("/static", StaticFiles(directory=frontend_path), name="static")
@@ -42,12 +53,44 @@ app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 def serve_ui():
     return FileResponse(os.path.join(frontend_path, "index.html"))
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 # --- Schemas ---
 class WatchlistCreate(BaseModel):
     product_name: str
     product_url: str
     target_price: float
     whatsapp_number: str
+
+    @field_validator("whatsapp_number")
+    @classmethod
+    def validate_phone(cls, v):
+        if not E164_RE.match(v):
+            raise ValueError("whatsapp_number must be in E.164 format, e.g. +919876543210")
+        return v
+
+    @field_validator("product_url")
+    @classmethod
+    def validate_url(cls, v):
+        if not AMAZON_URL_RE.match(v):
+            raise ValueError("product_url must be a valid Amazon URL")
+        return v
+
+    @field_validator("target_price")
+    @classmethod
+    def validate_price(cls, v):
+        if v <= 0:
+            raise ValueError("target_price must be greater than 0")
+        return v
+
+    @field_validator("product_name")
+    @classmethod
+    def validate_name(cls, v):
+        if len(v.strip()) == 0 or len(v) > 200:
+            raise ValueError("product_name must be between 1 and 200 characters")
+        return v.strip()
 
 class WatchlistUpdate(BaseModel):
     target_price: Optional[float] = None
@@ -57,6 +100,13 @@ class WatchlistUpdate(BaseModel):
 class ChatMessage(BaseModel):
     message: str
 
+    @field_validator("message")
+    @classmethod
+    def validate_message(cls, v):
+        if len(v.strip()) == 0 or len(v) > 1000:
+            raise ValueError("message must be between 1 and 1000 characters")
+        return v.strip()
+
 # --- Watchlist Routes ---
 @app.get("/api/watchlist")
 def get_watchlist(db: Session = Depends(get_db)):
@@ -64,6 +114,7 @@ def get_watchlist(db: Session = Depends(get_db)):
 
 @app.post("/api/watchlist", status_code=201)
 def add_to_watchlist(item: WatchlistCreate, db: Session = Depends(get_db)):
+    log.info("Adding watchlist item: %s", item.product_name)
     db_item = WatchlistItem(**item.model_dump())
     db.add(db_item)
     db.commit()
@@ -88,6 +139,7 @@ def delete_item(item_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Item not found")
     db.delete(item)
     db.commit()
+    log.info("Deleted watchlist item %d", item_id)
     return {"detail": "Deleted"}
 
 @app.post("/api/check-now")
