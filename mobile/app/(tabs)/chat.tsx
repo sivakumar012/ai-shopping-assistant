@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { API_BASE } from "../../constants/config";
+import { CHAT_API_BASE } from "../../constants/config";
 
 type Message = { id: string; role: "user" | "assistant"; text: string };
 
@@ -37,7 +37,7 @@ export default function ChatScreen() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/chat`, {
+      const res = await fetch(`${CHAT_API_BASE}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text.trim() }),
@@ -62,7 +62,7 @@ export default function ChatScreen() {
           keyExtractor={(m) => m.id}
           contentContainerStyle={styles.list}
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-          renderItem={({ item }) => (
+          renderItem={({ item }: { item: Message }) => (
             <View style={[styles.bubble, item.role === "user" ? styles.userBubble : styles.aiBubble]}>
               <Text style={[styles.bubbleText, item.role === "user" && styles.userText]}>{item.text}</Text>
             </View>
